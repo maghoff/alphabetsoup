@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta http-equiv="content-type" content="text/html; charset=utf-8">
+	<title>Alphabetsoup</title>
+	<link href='http://fonts.googleapis.com/css?family=Source+Sans+Pro:400,600,400italic,600italic&subset=latin,latin-ext' rel='stylesheet' type='text/css'>
+	<link href='soup.css' rel='stylesheet' type='text/css'>
+	<script type="text/javascript" src="keyboard.0.2.2.min.js"></script>
+	<script type="text/javascript" src="randy.min.js"></script>
+	<script type="text/javascript" src="jquery-1.7.2.min.js"></script>
+	<script>
+		onload = function()
+		{
+			var alphabet = "abcdefghijklmnopqrstuvwxyz";
+
+			var first;
+			var second;
+			var bindings = [];
+			var lines = [];
+
+			var correctCount = 0;
+			setInterval(function () {
+				document.getElementById("score").innerText = correctCount;
+				//correctCount = 0;
+			}, 200);
+
+			KeyboardJS.bind.key('1', function() { answer(0); });
+			KeyboardJS.bind.key('2', function() { answer(1); });
+
+			function newRound()
+			{
+				first = randy.choice(alphabet);
+				do {
+					second = randy.choice(alphabet);
+				} while (first === second);
+
+				document.getElementById('first' ).innerText = first;
+				document.getElementById('second').innerText = second;
+
+				bindings.forEach(function(binding) { binding.clear(); });
+
+				bindings = [
+					KeyboardJS.bind.key(first,  function() { answer(0); }),
+					KeyboardJS.bind.key(second, function() { answer(1); })
+				];
+			}
+
+			function output(text, cssClass)
+			{
+				var line = {
+					text:     text,
+					cssClass: cssClass
+				};
+				lines.push(line);
+				var html = '';
+				lines.forEach(function(line) {
+					html += '<div class="'+line.cssClass+'">' + line.text + '</div>';
+				});
+				document.getElementById('face-it').innerHTML = html;
+			}
+
+			var game = (function () {
+				var roundsLeft = 10;
+
+				function roundOver(result) {
+					if (--roundsLeft === 0) {
+						location.assign("scorecard.html?correct=" + correctCount);
+					}
+				}
+
+				return {
+					roundOver: roundOver
+				};
+			}());
+
+			var blinkTimeout;
+			function answer(letter)
+			{
+				var letters = [first, second];
+				var correctIndex = letters[0] < letters[1] ? 0 : 1;
+				var correct = letter === correctIndex;
+				var color = correct ? "green" : "red";
+
+				correctCount += (correct ? 1 : -1);
+
+				var questionNode = $(".question");
+				questionNode.css("box-shadow", "inset 0px 0px 20px " + color);
+				if (blinkTimeout) clearTimeout(blinkTimeout);
+				blinkTimeout = setTimeout(function () {
+					questionNode.css("box-shadow", "");
+				}, 300);
+
+				output("<span class='leftSide'>"+letters[correctIndex] + "</span> … <span class='rightSide'>" + letters[1-correctIndex] + "</span>", correct ? "correct" : "incorrect");
+
+				game.roundOver(correct);
+
+				newRound();
+			}
+
+			newRound();
+			document.getElementById('first' ).addEventListener('click', function() { answer(0); }, false);
+			document.getElementById('second').addEventListener('click', function() { answer(1); }, false);
+		}
+	</script>
+</head>
+<body>
+	<!--
+	<div>Ka kommer etter <span id="after">p</span>? <input id="after-answer"></input></div>
+	<div>Ka kommer jonathan safran foer <span id="before">p</span>? <input id="before-answer"></input></div>
+	<div>Ka indeks har <span id="index">p</span>? <input id="index-answer"></input></div>
+-->
+	<div class="relative-div">
+		<div class='face-it-container-container'>
+			<div class='face-it-container'>
+				<div class="header">Kass bostav e først?</div>
+				<div id='face-it'></div>
+			</div>
+		</div>
+		<div class="question">
+			<span class="alternative" id="first"  title="Hit 1 to select this letter"></span> eller
+			<span class="alternative" id="second" title="Hit 2 to select this letter"></span>?
+		</div>
+		<div class="notes">
+			Score: <span id="score">-</span>
+		</div>
+	</div>
+</body>
+</html>
